@@ -3,12 +3,13 @@
 Display *dpy;
 Window w;
 XImage *img;
-int blackColor, whiteColor, s, width, height, channels, imgwidth, imgheight;
+int blackColor, whiteColor, s, width, height, channels, imgwidth, imgheight, wwidth, wheight;
 stbi_uc *imgdata, *buf;
+XConfigureEvent xce;
 
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
-		printf("%s: Provide image as console argument", 0[argv]);
+		printf("%s: Provide image as console argument\n", 0[argv]);
 		return 1;
 	}
 	dpy = XOpenDisplay(NULL);
@@ -19,18 +20,21 @@ int main(int argc, char* argv[]) {
 
 	w = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
 			200, 100, 0, blackColor, blackColor);
-	XSelectInput(dpy, w, ExposureMask | StructureNotifyMask);
+	XSelectInput(dpy, w, ExposureMask | StructureNotifyMask | KeyPressMask);
 	XMapWindow(dpy, w);
+
+	Atom wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+	XSetWMProtocols(dpy, w, &wmDeleteMessage, 1);
 
 	GC gc = XCreateGC(dpy, w, 0, NULL);
 	XSetForeground(dpy, gc, whiteColor);
 
-	imgdata = stbi_load(argv[1], &width, &height, &channels, 4);
+	imgdata = stbi_load(1[argv], &width, &height, &channels, 4);
 	ASSERT(imgdata);
 	imgwidth = width;
 	imgheight = height;
 	if (ImageByteOrder(dpy) == LSBFirst) {
-		for (size_t i = 0; i < width * height * 4; i += 4) {
+		for (int i = 0; i < width * height * 4; i += 4) {
 			stbi_uc tmp = imgdata[i];
 			imgdata[i] = imgdata[i + 2];
 			imgdata[i + 2] = tmp;
@@ -43,24 +47,34 @@ int main(int argc, char* argv[]) {
 			(char*)buf, width, height, 32, 0);
 
 	XEvent e;
-	for (;;) {
+	int running = 1;
+	while (running) {
 		XNextEvent(dpy, &e);
 		switch(e.type) {
+			case KeyPress:
+				if (e.xkey.keycode == 0x09) running = 0;
+				break;
 			case Expose:
 				if (e.xexpose.count == 0) {
-					XPutImage(dpy, w, gc, img, 0, 0, 0, 0, width, height);
+					XPutImage(dpy, w, gc, img, 0, 0, (wwidth - width) / 2, (wheight - height) / 2, width, height);
 				}
 				break;
+			case ClientMessage:
+				if (e.xclient.data.l[0] == wmDeleteMessage) running = 0;
+				break;
 			case ConfigureNotify:
-				XConfigureEvent xce = e.xconfigure;
-				XDestroyImage(img);
+				xce = e.xconfigure;
+				wwidth = xce.width;
+				wheight = xce.height;
 				int neww = xce.width;
 				int newh = imgheight * neww / imgwidth;
 				if (newh >= xce.height) {
 					newh = xce.height;
 					neww = imgwidth * newh / imgheight;
 				}
+				if ((neww == width && newh == height) || neww > imgwidth || newh > imgheight) break;
 
+				XDestroyImage(img);
 				buf = malloc(neww * newh * 4);
 				stbir_resize_uint8(imgdata, imgwidth, imgheight, 0, buf, neww, newh, 0, 4);
 
