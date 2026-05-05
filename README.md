@@ -24,6 +24,8 @@ The supported image formats are the ones supported by the `stb_image.h` library:
 
 ## Compilation
 Dependencies:
+- **XLib** (library and headers)
+- **libxcb** (library and headers)
 - **GNU Autoconf**
 - **GNU Make**
 - a **C Compiler** (like GCC or Clang)
@@ -33,8 +35,9 @@ Dependencies:
 - prepare autoconf: `./autogen.sh`
 - create and enter `build` directory: `mkdir build && cd build`
 - configure the project: `../configure {flags}`
-  - you can  get info about the flags with `../configure --help`
+  - you can get info about the flags with `../configure --help`
 - compile the program: `make`
+- there will appear an executable `fih` in the `build` directory
 
 OPTIONALLY:
 - install the program: in the same directory execute `make install`
