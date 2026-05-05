@@ -1,6 +1,6 @@
 AC_CONFIG_AUX_DIR([build-aux])
 
-AC_INIT([fih], [1.0], [support@example.com])
+AC_INIT([fih], [1.1], [support@example.com])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AC_PROG_CC
