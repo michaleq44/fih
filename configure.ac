@@ -18,6 +18,22 @@ AS_IF([test "x$ac_cv_prog_cc_c11" = "xno"], [
 	FIH_FLAGS="-std=c11 -Wall"
 ])
 
+AC_CHECK_HEADERS([time.h], [],
+  [AC_MSG_ERROR([Required time headers not found.])])
+
+AC_CHECK_FUNCS([clock_gettime nanosleep], [],
+  [AC_MSG_ERROR([Required timing functions not found.
+This program requires POSIX.1-2001 or later.])])
+
+# Verify CLOCK_MONOTONIC exists
+AC_PREPROC_IFELSE([AC_LANG_PROGRAM(
+  [[#include <time.h>]],
+  [[#ifndef CLOCK_MONOTONIC
+    #error CLOCK_MONOTONIC not defined
+    #endif
+  ]])], [],
+  [AC_MSG_ERROR([CLOCK_MONOTONIC not defined. POSIX.1-2001 or later required.])])
+
 AC_SUBST([FIH_FLAGS])
 
 PKG_CHECK_MODULES([X11], [x11])

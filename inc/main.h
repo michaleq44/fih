@@ -9,7 +9,8 @@
 #include <time.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <stb_image.h>
-#include <stb_image_resize.h>
+#include "stb_image.h"
+#include "stb_image_resize.h"
+#include "icon.h"
 
 #define min(x,y) ((x) < (y) ? (x) : (y))

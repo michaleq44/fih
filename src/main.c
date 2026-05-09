@@ -1,5 +1,8 @@
 #include "main.h"
 
+const long UREDRAW_INTERVAL = 16000; // 16ms; 62.5 fps
+const long NLOOP_INTERVAL = 2000000; // 2ms; 500 tps
+
 Display *dpy = NULL;
 Window w;
 XImage *img = NULL;
@@ -40,6 +43,56 @@ void set_title(const char *fname) {
 		PropModeReplace, (unsigned char*)title, strlen(title));
 
 	XStoreName(dpy, w, title);
+}
+
+int set_icon(void) {
+	int icon_w, icon_h, icon_c;
+
+	stbi_uc *icon_data = stbi_load_from_memory(
+		fih_png, fih_png_len, &icon_w, &icon_h, &icon_c, 4
+	);
+
+	if (!icon_data) return 0;
+
+	unsigned long *icon_prop = malloc((2 + icon_w * icon_h) * sizeof(unsigned long));
+	if (!icon_prop) {
+		free(icon_prop);
+		stbi_image_free(icon_data);
+		return 0;
+	}
+
+	icon_prop[0] = icon_w;
+	icon_prop[1] = icon_h;
+
+	for (int i = 0; i < icon_w * icon_h; i++) {
+		unsigned char* pixel = &icon_data[i * 4];
+		if (ImageByteOrder(dpy) == LSBFirst) {
+			icon_prop[2 + i] = (pixel[3] << 24) |  // Alpha
+							   (pixel[0] << 16) |  // Red
+							   (pixel[1] << 8)  |  // Green
+							   (pixel[2]);         // Blue
+		} else {
+			icon_prop[2 + i] = (pixel[2] << 24) |  // Blue
+							   (pixel[1] << 16) |  // Green
+							   (pixel[0] << 8)  |  // Red
+							   (pixel[3]);         // Alpha
+		}
+	}
+
+	Atom net_wm_icon = XInternAtom(dpy, "_NET_WM_ICON", False);
+	Atom cardinal = XInternAtom(dpy, "CARDINAL", False);
+
+	XChangeProperty(dpy, w, net_wm_icon, cardinal, 32,
+		PropModeReplace,
+		(unsigned char*)icon_prop,
+		2 + icon_w * icon_h);
+
+	XFlush(dpy);
+
+	free(icon_prop);
+	stbi_image_free(icon_data);
+
+	return 1;
 }
 
 void cleanup(void) {
@@ -95,6 +148,9 @@ int main(int argc, char* argv[]) {
 			wwidth, wheight, 0, blackColor, blackColor);
 	XSelectInput(dpy, w, ExposureMask | StructureNotifyMask | KeyPressMask);
 	set_title(argv[1]);
+	if (!set_icon()) {
+		fprintf(stderr, "failed to set icon\n");
+	}
 	XMapWindow(dpy, w);
 
 	Atom wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
@@ -111,9 +167,8 @@ int main(int argc, char* argv[]) {
 	int running = 1;
 	int need_redraw = 0;
 
-	struct timespec ts;
-	ts.tv_sec = 0;
-	ts.tv_nsec = 16000 * 1000;
+	struct timespec last, now;
+	clock_gettime(CLOCK_MONOTONIC, &last);
 
 	while (running) {
 		while (XPending(dpy)) {
@@ -132,12 +187,23 @@ int main(int argc, char* argv[]) {
 
 					need_redraw = 1;
 					break;
+				case Expose:
+					if (e.xexpose.count == 0) {
+						need_redraw = 1;
+					}
 				default:
 					break;
 			}
 		}
 
 		if (need_redraw) {
+			clock_gettime(CLOCK_MONOTONIC, &now);
+			long elapsed = (now.tv_sec - last.tv_sec) * 1000000L +
+					   (now.tv_nsec - last.tv_nsec) / 1000;
+			if (elapsed < UREDRAW_INTERVAL) continue;
+			last = now;
+
+
 			int neww = xce.width;
 			int newh = imgheight * neww / imgwidth;
 			if (newh >= xce.height) {
@@ -180,6 +246,9 @@ int main(int argc, char* argv[]) {
 			need_redraw = 0;
 		}
 
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = NLOOP_INTERVAL;
 		nanosleep(&ts, NULL);
 	}
 
