@@ -31,8 +31,9 @@ Dependencies:
 - a **C Compiler** (like GCC or Clang)
 
 ### How to compile:
-- enter the project directory in a shell
-- prepare autoconf: `./autogen.sh`
+- enter the project directory in a shell<br><br>
+- **omit if you're building from the redistributable and not the source archive:** 
+  - prepare autoconf: `./autogen.sh`<br><br>
 - create and enter `build` directory: `mkdir build && cd build`
 - configure the project: `../configure {flags}`
   - you can get info about the flags with `../configure --help`

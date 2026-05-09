@@ -31,8 +31,9 @@ Dependencies:
 - **Kompilator C** (np. GCC lub Clang)
 
 ### Jak skompilować:
-- wejdź do folderu projektu w terminalu
-- przygotuj autoconf: `./autogen.sh`
+- wejdź do folderu projektu w terminalu<br><br>
+- **pomiń jeśli używasz archiwum dystrybucyjnego a nie bezpośredniego archiwum z kodem:**
+  - przygotuj autoconf: `./autogen.sh`<br><br>
 - stwórz i wejdź do folderu `build`: `mkdir build && cd build`
 - skonfiguruj projekt: `../configure {flagi}`
     - informacje o flagach możesz uzyskać z pomocą komendy: `../configure --help`
