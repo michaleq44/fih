@@ -1,5 +1,5 @@
 # fih
-* **Author:** Michał Kulas
+* **Author:** Michał Kulas<br>
 [English](README.md) | [Polski](README.pl.md)
 <br>
 Very simplistic image viewer for Linux ([Windows version](https://github.com/michaleq44/fih-win32))<br>
